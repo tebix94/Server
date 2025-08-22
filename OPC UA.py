@@ -111,3 +111,5 @@ def poll():
 
 root.after(POLL_MS, poll)
 root.mainloop()
+
+print('john cena')
