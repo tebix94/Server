@@ -1,0 +1,106 @@
+body{
+  margin:0;
+  background-color: #eaf3ff; /* azul claro */
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  min-height: 100vh;
+  display:flex;
+  flex-direction: column;
+  align-items:center;
+  padding-top: 80px;            /* ⬅️ Evita que el header fijo tape el contenido */
+}
+
+/* 🔹 Barra superior fija */
+.topbar{
+  position: fixed;              /* ⬅️ Fijo */
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display:flex;
+  justify-content: space-between;
+  align-items:center;
+  padding: 20px 40px;
+  box-sizing: border-box;
+  background: transparent;      /* el fondo queda azul por el body */
+}
+
+.main-title{
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #0b1b3a;
+}
+
+/* 🔹 Menú */
+.menu{
+  position: relative;           /* el contenedor no necesita estar fijo */
+  display: inline-block;
+}
+
+.menu__button{
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 16px;
+  background: #2b6ef5;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 14px rgba(43,110,245,.25);
+  transition: transform .05s ease, background .15s ease;
+}
+.menu__button:hover{ background: #1f57c7; }
+.menu__button:active{ transform: translateY(1px); }
+
+.menu__chev{ 
+  inline-size: 10px; 
+  block-size: 10px; 
+  border-right: 2px solid #fff; 
+  border-bottom: 2px solid #fff; 
+  transform: rotate(45deg); 
+  margin-top: -2px; 
+}
+
+.menu__list{
+  position: absolute;
+  right: 0;        /* menú se despliega hacia la derecha */
+  margin-top: 8px;
+  min-width: 220px;
+  background: #fff;
+  border: 1px solid #c9defd;
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(25, 52, 110, .12);
+  padding: 6px;
+  list-style: none;
+  display: none;
+}
+.menu__list[data-open="true"]{ display:block; }
+
+.menu__item a{
+  display: block;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: #0b1b3a;
+  text-decoration: none;
+  font-weight: 500;
+}
+.menu__item a:hover,
+.menu__item a:focus{
+  outline: none;
+  background: #eaf3ff;
+}
+
+/* 🔹 Cuadro centrado */
+.card{
+  background:#fff;
+  border: 1px solid #c9defd;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(25, 52, 110, .08);
+  padding: 24px;
+  width: clamp(280px, 90vw, 520px);
+  text-align: center;
+  margin-top: 20px;
+}
+
