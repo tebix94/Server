@@ -15,17 +15,31 @@ Class contains the following methods:
     3. multi_read() -> read multiple (same type) devices (PLC memory addresses)
     4. multi_write() -> write multiple (same type) devices (PLC memory addresses)
 
-Implementation example:
+Simple implementation example:
 
 # Instance some plc connections
 plc1 = kv_plc_tcp_socket('192.168.0.1', 8080, timeout=5)
 plc2 = kv_plc_tcp_socket('192.168.0.2', 8080)
 plc3 = kv_plc_tcp_socket('192.168.0.3', 8000, timeout=2)
 
+# Send and receive data examples
 plc1.multi_read(MR, 5000, 20)
 plc2.read(MR, 3100)
 plc3.multi_write(MR, 6032, data_list) # multi_write() method infers the number of devices to be written from the data list parameter length
 plc1.write(DM, 101, data)
+
+Best practice to ensure socket is closed correctly:
+
+try:
+
+    ....... SOME API/USER CODE .......
+
+except (OSError, ConnectionResetError, ConnectionAbortedError, ConnectionRefusedError, TimeoutError, socket.timeout) as e:
+    print(f"Socket error: {e}")
+    plc.close_socket()
+
+except Exception as e:
+    print(f'user_module_name error: {e}')
 
 '''
 class kv_plc_tcp_socket:
@@ -33,20 +47,23 @@ class kv_plc_tcp_socket:
         self.__valid_devices = ('R', 'MR', 'DM')
         self.__address = ipv4_address
         self.__port_number = port_number
+        self.__timeout = timeout if timeout is not None else 3
+        self.__socket = socket.create_connection((self.__address, self.__port_number), timeout=self.__timeout)
 
-        if timeout == None:
-            self.__timeout = 3
-        else:
-            self.__timeout = timeout
+    def __del__(self):
+        self.__socket.close()
+
+    def close_socket(self):
+        self.__socket.close()
 
     def read(self, device: str, device_number: int) -> int:
         # Check that device matches one of the supported by the class
         if device not in self.__valid_devices:
             raise ValueError(f'Unsupported device type {device}')
-
-        with socket.create_connection((self.__address, self.__port_number), timeout=self.__timeout) as s:
-            s.sendall(f'RD {device}{device_number}\r'.encode('ascii'))
-            server_response = s.recv(1024)
+        
+        # Send message from socket
+        self.__socket.sendall(f'RD {device}{device_number}\r'.encode('ascii'))
+        server_response = self.__socket.recv(1024)
 
         # Check for empty response before decoding
         if server_response == b'':
@@ -94,10 +111,9 @@ class kv_plc_tcp_socket:
         elif type(data) == int:
             value = str(data)
 
-        with socket.create_connection((self.__address, self.__port_number), timeout=self.__timeout) as s:
-            s.sendall(f'WR {device}{device_number} {value}\r'.encode('ascii'))
-            # Wait for server response just to take out the message from the socket buffer
-            server_response = s.recv(1024)
+        # Send message from socket
+        self.__socket.sendall(f'WR {device}{device_number} {value}\r'.encode('ascii'))
+        server_response = self.__socket.recv(1024) # Wait for server response just to take out the message from the socket buffer
 
         if server_response == b'':
             raise Exception('Connection closed by peer')

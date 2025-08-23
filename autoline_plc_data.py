@@ -1,7 +1,14 @@
 import os
+import sys
+import colorama
 import threading
 import time
 from python_modules.kv_plc import *
+
+from colorama import init, Fore, Style
+init(autoreset=True)
+
+os.system('cls' if os.name == 'nt' else 'clear')
 
 # PLC names list
 plc_names = ('Loading cable',
@@ -141,44 +148,43 @@ lights_l4 = [{'green': 0, 'red': 0, 'yellow': 0} for _ in range(len(plc_l4))]
 lights_l5 = [{'green': 0, 'red': 0, 'yellow': 0} for _ in range(len(plc_l5))]
 lights_l6 = [{'green': 0, 'red': 0, 'yellow': 0} for _ in range(len(plc_l6))]
 
+# Sys function
+def move_cursor_top():
+    sys.stdout.write('\033[H')  # Move cursor to top left
+    sys.stdout.flush()
+
 # Update functions
-def update_ct_single(plc_line, ct_line):
+def update_ct_single(plc, ct_list, idx):
     try:
-        for plc, ct in zip(plc_line, ct_line):
-            ct = float(plc.read('DM', 88)) / 10.
+        ct_list[idx] = float(plc.read('DM', 88)) / 10.
+    except (OSError, ConnectionResetError, ConnectionAbortedError, ConnectionRefusedError, TimeoutError, socket.timeout) as e:
+        print(f"Socket error: {e}")
+        plc.close_socket()
     except Exception as e:
         print(f'update_ct_single() error: {e}')
 
 def update_status_lights(plc, lights):
     try:
         [lights['green'], lights['red'], lights['yellow']]= plc.multi_read('R', 40005, 3)
+    except (OSError, ConnectionResetError, ConnectionAbortedError, ConnectionRefusedError, TimeoutError, socket.timeout) as e:
+        print(f"Socket error: {e}")
+        plc.close_socket()
     except Exception as e:
         print(f'update_status_lights() error: {e}')
 
 while True:
-    os.system('cls' if os.name == 'nt' else 'clear')
+    move_cursor_top()
 
     # Fetch cycle time values
-    for plc_line_list, ct_line_list in zip([plc_l1,
-                                            plc_l2,
-                                            plc_l4,
-                                            plc_l5,
-                                            plc_l6],
-                                            [ct_l1,
-                                             ct_l2,
-                                             ct_l4,
-                                             ct_l5,
-                                             ct_l6,]):
+    for plc_line, ct_line in zip([plc_l1, plc_l2, plc_l4, plc_l5, plc_l6],
+                                 [ct_l1, ct_l2, ct_l4, ct_l5, ct_l6]):
         threads = []
-        for plc_line, ct_line in zip(plc_line_list, ct_line_list):
-            t = threading.Thread(target=update_ct_single, args=(plc_line, ct_line))
+        for idx, plc in enumerate(plc_line):
+            t = threading.Thread(target=update_ct_single, args=(plc, ct_line, idx))
             t.start()
             threads.append(t)
         for t in threads:
             t.join()
-
-    for name, ct in zip(plc_names, ct_l4):
-        print(f'{name}: {ct} seconds')
 
     # Fetch status lights values
     for plc_list, lights_list in [
@@ -196,6 +202,10 @@ while True:
         for t in threads:
             t.join()
 
-    print(lights_l6[11]['yellow'])
-
-    time.sleep(0.25)
+    for name, ct, lights in zip(plc_names, ct_l4, lights_list):
+        print(f'{name}: {ct} seconds,',
+          f'{Fore.GREEN if lights["green"] else Fore.BLACK}Green',
+          f'{Fore.RED if lights["red"] else Fore.BLACK}Red',
+          f'{Fore.YELLOW if lights["yellow"] else Fore.BLACK}Yellow')
+        
+    time.sleep(0.1)
